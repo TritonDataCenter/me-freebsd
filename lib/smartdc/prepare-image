@@ -1,0 +1,639 @@
+#!/usr/local/bin/bash
+#
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
+#
+# Script that will prepare image to have a dataset made out of it
+
+# load common functions and vars
+. /lib/smartdc/lib_smartdc_scripts.cfg
+
+# target distro that this script is engineered for 
+# Please do not change this as it is a QA check to
+# ensure that all is getting done to make good images
+TARGET_DISTRO='freebsd'
+
+# Disk that is copied from for images
+SOURCE_DISK='/dev/ada0'
+
+# Disk used for images of dataset to be copied to
+IMAGE_DISK='/dev/vtbd0'
+
+# initilize warning string
+WARNING=""
+
+addwarn() {
+  WARNING="${WARNING}(warning) $@\n"
+}
+
+warn() {
+  printf "(warn) %s\n" "$@"
+}
+
+separator() {
+  for i in {1..78} ; do
+    printf "="
+  done
+  printf "\n"
+}
+
+check_for_smartdc() {
+# Joyent installs a custom install of Node.JS and smartdc 
+# This checks to ensure that this is installed
+
+  lib_smartdc_info "checking for JPC install of the JPC Cloud API utilties Node.JS SmartDC"
+  if [[ ! -d /opt/local/smartdc ]] ; then
+     lib_smartdc_info "MISSING /opt/local/smartdc - JPC Cloud API utilties Node.JS SmartDC NOT installed"
+     addwarn "Missing install of JPC Cloud API utilties Node.JS SmartDC in /opt/local/smartdc"
+     addwarn "This is not fatal and your system will run ok"
+     addwarn "Install info is at: http://wiki.joyent.com/wiki/display/jpc2/About+Using+the+Cloud+API#AboutUsingtheCloudAPI-InstallNode.js"
+  else
+    # make sure that /opt/local/smartdc is owned by root
+    lib_smartdc_info "settng /opt/local/smartdc to be owned by root:wheel"
+    chown -R root:wheel /opt/local
+    chown -R root:wheel /opt/local/smartdc
+
+    if [[ ! -f /opt/local/smartdc/bin/node ]]; then
+       lib_smartdc_info "MISSING /opt/local/smartdc/bin/node - JPC Cloud API utilties Node.JS SmartDC NOT installed"
+       addwarn "Missing node binary of JPC Cloud API utilties Node.JS SmartDC in /opt/local/smartdc/bin/node"
+       addwarn "This is not fatal and your system will run ok"
+       addwarn "Install info is at: http://wiki.joyent.com/wiki/display/jpc2/About+Using+the+Cloud+API#AboutUsingtheCloudAPI-InstallNode.js"
+    else 
+       NODE_VERSION=`/opt/local/smartdc/bin/node -v`; 
+       lib_smartdc_info "JPC Cloud API utilties Node.JS ( ${NODE_VERSION} ) installed"
+       if [[ ! -f /opt/local/smartdc/lib/node_modules/smartdc/package.json ]]; then
+          lib_smartdc_info "MISSING SmartDC NPM install of JPC Cloud API utilties Node.JS - SmartDC NOT installed"
+          addwarn "Missing SmartDC NPM install of JPC Cloud API utilties Node.JS SmartDC in /opt/local/smartdc/lib/node_modules/smartdc/"
+          addwarn "This is not fatal and your system will run ok"
+          addwarn "Install info is at: http://wiki.joyent.com/wiki/display/jpc2/About+Using+the+Cloud+API#AboutUsingtheCloudAPI-InstallNode.js"
+       else
+          SMARTDC_VERSION=`grep \"version\" /opt/local/smartdc/lib/node_modules/smartdc/package.json | cut -d: -f2 | tr -d \s | tr -d \" | tr -d \, 2> /dev/null`
+          lib_smartdc_info "JPC Cloud API SmartDC utilties ( ${SMARTDC_VERSION} ) installed"
+       fi
+    fi 
+  fi
+}
+
+cleanup_logs() {
+  lib_smartdc_info "cleaning up logs"
+  find /var/log -type f | xargs rm -f
+
+  # clear /var/tmp
+  rm -rf /var/tmp/*
+}
+
+prepare_image_disk() {
+   
+   ROOT_DISK="${IMAGE_DISK}1"
+   SWAP_DISK="${IMAGE_DISK}2"
+   TMP_DISK="${IMAGE_DISK}3"
+
+   # format image root partition
+   lib_smartdc_info "Making ext4 FS on image root disk $ROOT_DISK"
+   out=`mkfs.ext4 -L ROOT -m 1 $ROOT_DISK 2> /dev/null` 
+   if [[  $? -ne 0 ]]; then
+      lib_smartdc_fatal "Failed to make ext4 fs on image root disk ( $ROOT_DISK ). Run mkfs.ext4 -L ROOT -m 1 $ROOT_DISK for more info"
+   fi
+
+   # format image tmp partition
+   lib_smartdc_info "Making ext2 FS on image tmp disk $TMP_DISK"
+   out=`mkfs.ext2 -L TMP -m 1 $TMP_DISK 2> /dev/null` 
+   if [[  $? -ne 0 ]]; then
+      lib_smartdc_fatal "Failed to make ext2 fs on image tmp disk ( $TMP_DISK ). Run mkfs.ext2 -L TMP -m 1 $TMP_DISK for more info"
+   fi
+
+   # format image swap partition
+   lib_smartdc_info "Making swap FS on image tmp disk $SWAP_DISK"
+   out=`mkswap -L SWAP1 $SWAP_DISK 2> /dev/null` 
+   if [[  $? -ne 0 ]]; then
+      lib_smartdc_fatal "Failed to make swap fs on image swap disk ( $SWAP_DISK ). Run mkswp -L SWAP1 $SWAP_DISK for more info"
+   fi
+}
+
+check_image_disk () {
+
+   echo " "
+   echo " "
+   read -p "WARNING!!! $IMAGE_DISK will be destroyed. Make super sure that $IMAGE_DISK is the proper one to destroy. [Y/N] " -n 1
+   if [[ ! $REPLY =~ ^[Yy]$ ]];  then
+      echo  " "
+      echo  " "
+      lib_smartdc_fatal "User selected not to run $0 by hitting key that was not a 'Y' or 'y'"
+   else
+      if [[ $IMAGE_DISK == "/dev/vtbd0" ]] ; then
+         echo  " "
+         echo  " "
+         read -p "DANGER!!! $IMAGE_DISK is the main root disk for instances. This is your last chance to not desimate all data on $IMAGE_DISK. Most likely you do not want to do this. [Y/N] " -n 1
+         echo  " "
+         echo  " "
+         if [[ ! $REPLY =~ ^[Yy]$ ]] ; then
+            echo  " "
+            echo  " "
+            lib_smartdc_fatal "EXITING as $IMAGE_DISK is user backed out." 
+         fi
+      fi
+   fi
+
+   if [[ ! -e $IMAGE_DISK ]]; then
+     lib_smartdc_fatal "Image disk is not available to make image. Contact Joyent Support to make image disk ( $IMAGE_DISK ) available." 
+   fi 
+
+   if [[ -z `which gpart` ]] ; then
+     lib_smartdc_fatal "gpart not installed. You need to install parted run 'apt-get install parted'."
+   fi
+
+   # make sure device is not mounted
+   lib_smartdc_info "Making sure that $IMAGE_DISK is not mounted"
+   umount -f $IMAGE_DISK 2> /dev/null
+
+   # print list of command to partition disk
+   BOOT_DISK_PART_INFO=`gpart backup $SOURCE_DISK | grep "^1"`
+   ROOT_DISK_PART_INFO=`gpart backup $SOURCE_DISK | grep "^2"`
+   SWAP_DISK_PART_INFO=`gpart backup $SOURCE_DISK | grep "^3"`
+   TMP_DISK_PART_INFO=`gpart backup $SOURCE_DISK | grep "^4"`
+
+   BOOT_DISK_PART_START=`echo $BOOT_DISK_PART_INFO | sed -r "s/\ +/:/g" | cut -d: -f3`
+   ROOT_DISK_PART_START=`echo $ROOT_DISK_PART_INFO | sed -r "s/\ +/:/g" | cut -d: -f3`
+   SWAP_DISK_PART_START=`echo $SWAP_DISK_PART_INFO | sed -r "s/\ +/:/g" | cut -d: -f3`
+   TMP_DISK_PART_START=`echo $TMP_DISK_PART_INFO | sed -r "s/\ +/:/g" | cut -d: -f3`
+
+   BOOT_DISK_PART_END=`echo $BOOT_DISK_PART_INFO | sed -r "s/\ +/:/g" | cut -d: -f4`
+   ROOT_DISK_PART_END=`echo $ROOT_DISK_PART_INFO | sed -r "s/\ +/:/g" | cut -d: -f4`
+   SWAP_DISK_PART_END=`echo $SWAP_DISK_PART_INFO | sed -r "s/\ +/:/g" | cut -d: -f4`
+   TMP_DISK_PART_END=`echo $TMP_DISK_PART_INFO | sed -r "s/\ +/:/g" | cut -d: -f4`
+
+   #ROOT_DISK_PART_SIZE=`echo $ROOT_DISK_PART_INFO | cut -d: -f4 | tr -d B`
+   #SWAP_DISK_PART_SIZE=`echo $SWAP_DISK_PART_INFO | cut -d: -f4 | tr -d B`
+   #TMP_DISK_PART_SIZE=`echo $TMP_DISK_PART_INFO | cut -d: -f4 | tr -d B`
+
+   #ROOT_DISK_PART_TYPE=`echo $ROOT_DISK_PART_INFO | cut -d: -f5`
+   #SWAP_DISK_PART_TYPE=`echo $SWAP_DISK_PART_INFO | cut -d: -f5`
+   #TMP_DISK_PART_TYPE=`echo $TMP_DISK_PART_INFO | cut -d: -f5`
+
+   #ROOT_DISK_PART_SIZE_MB=`parted -m /dev/vda unit MB print | grep "^1" | cut -d: -f4`
+   #SWAP_DISK_PART_SIZE_MB=`parted -m /dev/vda unit MB print | grep "^2" | cut -d: -f4`
+   #TMP_DISK_PART_SIZE_MB=`parted -m /dev/vda unit MB print | grep "^3" | cut -d: -f4`
+
+   #lib_smartdc_info "Making $IMAGE_DISK lable of msdos"
+   #parted $IMAGE_DISK mklabel msdos
+   
+   #lib_smartdc_info "Making root partiton on $IMAGE_DISK of $ROOT_DISK_PART_SIZE_MB"
+   #parted $IMAGE_DISK unit b mkpart primary $ROOT_DISK_PART_START $ROOT_DISK_PART_END
+   #lib_smartdc_info "Making root partiton on ${IMAGE_DISK}1 bootable"
+   #parted $IMAGE_DISK set 1 boot on 
+
+   #lib_smartdc_info "Making swap partiton on $IMAGE_DISK of $SWAP_DISK_PART_SIZE_MB"
+   #parted $IMAGE_DISK unit b mkpart primary $SWAP_DISK_PART_START $SWAP_DISK_PART_END
+
+   #lib_smartdc_info "Making tmp partiton on $IMAGE_DISK of $TMP_DISK_PART_SIZE_MB"
+   #parted $IMAGE_DISK unit b mkpart primary $TMP_DISK_PART_START $TMP_DISK_PART_END
+
+   #prepare_image_disk
+
+   #for i in 1 2 3; do
+   #   DEVICE="${IMAGE_DISK}${i}"
+   #   OUTPUT=`blkid | grep $DEVICE | wc -l 2> /dev/null`
+      
+   #if [[ $OUTPUT -eq 0 ]]; then
+   #     TARGET_PARTITION_START=`parted -m /dev/vda unit b print | grep "^${i}" | cut -d: -f2`
+   #     TARGET_PARTITION_END=`parted -m /dev/vda unit b print | grep "^${i}" | cut -d: -f3`
+   #     TARGET_PARTITION_SIZE=`parted -m /dev/vda unit MB print | grep "^${i}" | cut -d: -f4`
+   #     TARGET_PARTITION_TYPE=`parted -m /dev/vda unit b print | grep "^${i}" | cut -d: -f5`
+   #     lib_smartdc_fatal "Disk $DEVICE is not ready for image. Need to format ${IMAGE_DISK}${i} the same as /dev/vda${i}. Use fdisk to set up ${IMAGE_DISK}${i} as a $TARGET_PARTITION_SIZE - Starting at byte $TARGET_PARTITION_START Ending at $TARGET_PARTITION_END of type byte $TARGET_PARTITION_TYPE." 
+   #   fi 
+   #done
+
+   #ROOT_DISK="${IMAGE_DISK}1"
+   #SWAP_DISK="${IMAGE_DISK}2"
+   #TMP_DISK="${IMAGE_DISK}3"
+
+   #ROOT_DISK_CHECK=`sfdisk -q -l $IMAGE_DISK | grep $ROOT_DISK | grep 83 | grep -i Linux 2> /dev/null`
+   #SWAP_DISK_CHECK=`sfdisk -q -l $IMAGE_DISK | grep $SWAP_DISK | grep 82 | grep -i swap 2> /dev/null`
+   #TMP_DISK_CHECK=`sfdisk -q -l $IMAGE_DISK | grep $TMP_DISK | grep 83 | grep -i Linux 2> /dev/null`
+
+   #if [[  -b $ROOT_DISK_CHECK ]]; then
+   #   lib_smartdc_fatal "No root disk found at $ROOT_DISK. Make sure $IMAGE_DISK is partitioned properly with $ROOT_DISK as a Linux partition of type 83"
+   #fi
+
+   #if [[  -b $SWAP_DISK_CHECK ]]; then
+   #   lib_smartdc_fatal "No swap disk found at $SWAP_DISK. Make sure $IMAGE_DISK is partitioned properly with $ROOT_DISK as a Swap partition of type 82"
+   #fi
+
+   #if [[  -b $TMP_DISK_CHECK ]]; then
+   #   lib_smartdc_fatal "No tmp image disk found at $TMP_DISK. Make sure $IMAGE_DISK is partitioned properly with $TMP_DISK as a Linux partition of type 83"
+   #fi
+
+   #ROOT_DISK_BOOTABLE_CHECK=`sfdisk -q -l $IMAGE_DISK | grep $ROOT_DISK | grep \* 2> /dev/null`
+
+   #if [[  -b $ROOT_DISK_BOOTABLE_CHECK ]]; then
+   #   lib_smartdc_fatal "Root disk ( $ROOT_DISK ) is not set to bootable. Make sure $IMAGE_DISK is partitioned properly with $ROOT_DISK set as bootable"
+   #fi
+
+   #IMAGE_DISK_VERIFY=$(`sfdisk -q -V $IMAGE_DISK`)
+
+   #if [[  $IMAGE_DISK_VERIFY -ne 0 ]]; then
+   #   lib_smartdc_fatal "Image disk ( $IMAGE_DISK ) failed sfdisk verify. Run sfdisk -V $IMAGE_DISK for more info"
+   #fi
+}
+
+copy_root_to_image_disk() {
+  TARGET_ROOT_MNT_POINT='/mnt/image_root-target'
+
+  # check for root target image root mount dir
+  if [[ ! -d $TARGET_ROOT_MNT_POINT ]]; then
+     lib_smartdc_info "creating $TARGET_ROOT_MNT_POINT"
+     mkdir -p $TARGET_ROOT_MNT_POINT
+  fi
+
+  # mount ${IMAGE_DISK}1 aka. target root disk
+  lib_smartdc_info "mounting ${IMAGE_DISK}1"
+  out=`mount -t ext4 ${IMAGE_DISK}1 $TARGET_ROOT_MNT_POINT 2> /dev/null` 
+  if [[  $? -ne 0 ]]; then
+     lib_smartdc_fatal "Failed to mount ${IMAGE_DISK}1 on $TARGET_ROOT_MNT_POINT"
+  fi
+ 
+  # make sure mount is there
+  MOUNT_CHECK=$(mount | grep ${IMAGE_DISK}1 | grep $TARGET_ROOT_MNT_POINT | wc -l) 
+  if [[ $MOUNT_CHECK -ne 1 ]]; then
+     lib_smartdc_fatal "Failed to mount ${IMAGE_DISK}1 on $TARGET_ROOT_MNT_POINT"
+  fi
+
+  # copy files from target root disk ( /dev/sda1 ) to source root disk ( /dev/sdc1 )
+  lib_smartdc_info "archive file copy from / to $TARGET_ROOT_MNT_POINT ( this can take up to 5 min )"
+  cp -ax / $TARGET_ROOT_MNT_POINT
+
+  # install grub on to $IMAGE_DISK
+  lib_smartdc_info "Installing GRUB on to $IMAGE_DISK"
+  out=`grub-install --no-floppy --recheck --root-directory=${TARGET_ROOT_MNT_POINT} --boot-directory=${TARGET_ROOT_MNT_POINT}/boot $IMAGE_DISK 2> /dev/null` 
+  if [[  $? -ne 0 ]]; then
+     lib_smartdc_fatal "Failure from grub-install. grub-install --no-floppy --recheck --root-directory=${TARGET_ROOT_MNT_POINT} --boot-directory=${TARGET_ROOT_MNT_POINT}/boot $IMAGE_DISK"
+  fi
+ 
+  # unmount $TARGET_ROOT_MNT_POINT 
+  umount $TARGET_ROOT_MNT_POINT 2> /dev/null
+
+  # fsck the disks to make sure they are clean
+  lib_smartdc_info "fscking ${IMAGE_DISK}1"
+  fsck -y ${IMAGE_DISK}1 2> /dev/null 
+  lib_smartdc_info "fscking ${IMAGE_DISK}3"
+  fsck -y ${IMAGE_DISK}3 2> /dev/null
+
+  # remove root target image root mount dir
+  if [[ -d $TARGET_ROOT_MNT_POINT ]]; then
+     lib_smartdc_info "removing $TARGET_ROOT_MNT_POINT"
+     rm -rf $TARGET_ROOT_MNT_POINT 2> /dev/null
+  fi
+
+}
+
+cleanup_lock_files() {
+  # makes sure locak file is not in place on provisioning
+  lib_smartdc_info "cleaning up lock files"
+  rm -f /root/.uscript.lock
+  rm -rf /var/spool/lock/*
+}
+
+cleanup_root() {
+  lib_smartdc_info "cleaning up root account"
+  rm -f /root/.bash_history
+  rm -f /root/.history
+  history -c
+  history -w
+  rm -f /root/.bash_history
+  rm -f /root/.history
+  history -c
+  history -w
+  rm -f /root/.bash_history
+  rm -f /root/.history
+  rm -f /root/.lesshst
+  rm -f /root/.viminfo
+
+  local passwd=$(grep ^root: /etc/passwd | awk -F ':' '{print $2}')
+  if [[ -n $passwd ]] ; then
+    addwarn "root user has a password set. This is a potential vulnerability"
+    addwarn "consider removing the password with 'passwd -d root'."
+  fi
+
+  local passwd=$(grep ^toor: /etc/passwd | awk -F ':' '{print $2}')
+  if [[ -n $passwd ]] ; then
+    addwarn "toor user has a password set. This is a potential vulnerability"
+    addwarn "consider removing the password with 'passwd -d toor'."
+  fi
+}
+
+cleanup_other_users() {
+  lib_smartdc_info "cleaning up other user account"
+
+  # looks for list of users that should not be on system
+  USERLIST='jasun joyent'
+  FILELIST='passwd'
+  for user in $USERLIST; do
+     for file in $FILELIST; do
+        local passwd=$(grep "^${user}:" /etc/${file} | awk -F ':' '{print $2}')
+        if [[ -n $passwd ]] ; then
+          lib_smartdc_info "$user user exist in /etc/${file}. This is a potential vulnerability"
+          lib_smartdc_fatal "Need to remove $user user."
+        fi
+   done
+
+     if [[ -d "/home/$user" ]] ; then
+       lib_smartdc_info "/home/$user exist. This is a potential vulnerability"
+       lib_smartdc_fatal "Need to remove /home/$user."
+     fi
+   
+     GROUPFILELIST='group' 
+     for groupfile in $GROUPFILELIST; do
+        out=$(grep $user /etc/${groupfile} | wc -l)
+        if [ $out -ne 0 ]; then
+           addwarn "$user user exist /etc/${groupfile}. This is a potential vulnerability and user should be removed."
+        fi 
+     done
+  done
+
+  # check for passwors set for any other user
+  local USERLIST=$(grep -E "^[[:alpha:]]+:[^\*\!\:]" /etc/passwd | awk -F ':' '{print $1}')
+  for user in $USERLIST; do
+    addwarn "$user user exist with password set in /etc/passwdshadow. This is a potential vulnerability"
+  done
+}
+
+cleanup_ssh() {
+  lib_smartdc_info "cleaning up ssh"
+  find /etc/ssh -type f -name "ssh_host_*" | xargs rm -f    
+
+  # remove /root/.ssh files
+  # if you need these files on provisioning please use config management 
+  FILELIST='authorized_keys known_hosts id_dsa id_dsa.pub id_rsa id_rsa.pub ssh_config'
+  for FILE in $FILELIST; do
+     if [ -f "/root/.ssh/$FILE" ]; then
+        rm -r /root/.ssh/$FILE
+     fi
+  done 
+}
+
+cleanup_disks() {
+  out=$(grep "/dev/ada1p1" /etc/fstab | wc -l | tr -d ' ')
+  if [[ $out -ne 0 ]] ; then
+     lib_smartdc_info "removing /dev/ada1p1 entries from fstab"
+     sed -iE '/^\/dev\/ada1p1/d' /etc/fstab
+  fi
+}
+
+cleanup_metadata() {
+  lib_smartdc_info "cleaning up meta data"
+  rm -f /root/user-script
+  rm -f /root/user-data
+}
+
+cleanup_hostname() {
+  lib_smartdc_info "removing hostname"
+  sed -iE '/^hostname=.*/s//hostname=\"\"/' /etc/rc.conf
+  if [ -e /etc/hostname ] ; then
+     rm -f /etc/hostname
+  fi
+}
+
+check_kernel_data() {
+  # check to make sure that only one kernel is installed
+  # this saves space for provisioning and only one kernel
+  # is needed
+  lib_smartdc_info "checking module dir"
+  MODULE_DIR_NUM=`ls /lib/modules | wc -l`
+  if [ $MODULE_DIR_NUM -gt 1 ]; then
+    addwarn "Looks like there are $MODULE_DIR_NUM dir in /lib/modules. You should really only have one kernel installed"
+    addwarn "This saves space and makes for smaller datasets."
+  fi
+
+  KERNEL_NUM=`ls /boot/vmlinuz* | wc -l`
+  if [ $KERNEL_NUM -gt 1 ]; then
+    addwarn "Looks like there are $KERNEL_NUM kernels installed in /boot. You should really only have one kernel installed"
+    addwarn "This saves space and makes for smaller datasets."
+  fi
+}
+
+
+# FreeBSD specific commands go here
+prepare_freebsd() {
+  
+  lib_smartdc_info "Removing common files for all FreeBSD systems"
+  
+  # Remove any DHCP leases
+  find /var/db/ -type f -name "dhclient.leases.*" | xargs rm -f
+
+  # Remove NTP drift file
+  rm -f /var/db/ntpd.drift
+
+  # Remove locate database
+  rm -f /var/db/locate.database
+
+  # Remove entropy
+  find /var/db/entropy/ -type f -name "saved-entropy.*" | xargs rm -f
+  
+  lib_smartdc_info "NEED TO CODE - cleaning up package cache"
+  # clean up package databases
+
+  lib_smartdc_info "NEED TO CODE - verify ACPID is working"
+  # verify ACPID is running 
+  # verify that ACPI is logging to /var/log/messages
+ 
+  # check for proper Joyent freebsd repo configured
+  lib_smartdc_info "NEED TO CODE - verify freebsd repo is working"
+
+  # make sure that link is in place for /etc/update-motd.d/99-joyent-footer
+  lib_smartdc_info "NEED TO CODE - verify dynmaic MOTD freebsd is configured"
+
+  # make sure sshd is running at boot
+  out=$(grep -iE 'sshd_enable=\"yes\"' /etc/rc.conf | wc -l | tr -d ' ')
+  if [[ $out -eq 1 ]] ; then
+    lib_smartdc_fatal "TEST - SSHD is not enabled to start in /etc/rc.conf - this needs to be enabled." 
+  fi  
+
+  # make sure ntpd is running at boot
+  out=$(grep -iE 'ntpd_enable=\"yes\"' /etc/rc.conf | wc -l | tr -d ' ')
+  if [[ $out -eq 1 ]] ; then
+    addwarn "TEST - NTPD is not enabled to start in /etc/rc.conf"
+    addwarn "It is highly recommended that you run NTPD"
+  fi  
+
+  # make sure that ntpd is configured to listen
+  out=$(ntpq -pn | grep -E "\.INIT\.(.*)(0.000)(.*)(0.000)(.*)(0.000)" | wc -l)
+  if [[ ${out} -gt 3 ]]; then
+    addwarn "NTPD seems has more than 3 time server failures"
+    addwarn "run 'ntpq -pn' to verify that time servers are updating NTPD"
+  fi
+  
+}
+
+# specific fixes for freebsd
+freebsd_fixes() {
+
+  FREEBSD_VERSION=$(grep "bsd_distro_version:" $JOYENT_VERSION_FILE | cut -d':' -f 2 | tr -d ' ')
+
+  # Specific fixes for freebsd version 9.1 
+  if [[ $FREEBSD_VERSION == "9.1" ]] ; then
+     lib_smartdc_info "Applying specific fixes for freebsd $FREEBSD_VERSION"
+
+     # Check for VirtIO kernel modules
+     lib_smartdc_info "Checking for VirtIO kernel modules located in /boot/modules for freebsd $FREEBSD_VERSION"
+     
+     MODULEFILELIST='if_vtnet.ko virtio.ko virtio_blk.ko virtio_pci.ko'
+     for modulefile in $MODULEFILELIST; do
+        if [ ! -e "/boot/modules/$modulefile" ] ; then
+          lib_smartdc_fatal "VirtIO kernel module file /boot/modules/$modulefile needs to be located in /boot/modules"
+        fi
+     done
+
+     # Check that VirtIO kernel modules are loaded on boot
+     lib_smartdc_info "Checking for VirtIO kernel modules installed on boot for freebsd $FREEBSD_VERSION"
+
+     MODULELIST='virtio_load virtio_pci_load virtio_blk_load if_vtnet_load'
+     for module in $MODULELIST; do
+        local module_check=$(grep "$module" /boot/loader.conf | grep -I "yes")
+        if [[ -n $module_check ]] ; then
+          lib_smartdc_fatal "VirtIO kernel module ( $module ) needs to be loaded in /boot/loader.conf: ${module}=\"YES\""
+        fi
+     done
+
+     # Check that VirtIO kernel modules are loaded now
+     lib_smartdc_info "Checking for VirtIO kernel modules loaded now"
+
+     MODULELIST='virtio.ko virtio_pci.ko virtio_blk.ko if_vtnet.ko'
+     for module in $MODULELIST; do
+        local module_check=$(kldstat | grep $module | wc -l)
+        if [[ $module_check -eq 0 ]] ; then
+          lib_smartdc_fatal "VirtIO kernel module ( $module ) is not loaded according to kldstat"
+        fi
+        local module_debug_check=$(kldstat | grep $module | grep -I "debug" | wc -l)
+        if [[ $module_debug_check -ne 0 ]] ; then
+          addwarn "VirtIO kernel debug module ( $module ) is loaded according to kldstat"
+        fi
+     done
+     
+     # Check that vtnet0 and vtnet1 are in /etc/rc.conf and configured for DHCP
+     lib_smartdc_info "Checking for VirtIO nic are configured for dhcp on boot"
+     vtnet0_etc_check=$(grep "ifconfig_vtnet0=" /etc/rc.conf | grep -v "#" )
+     if [[ ! -z $vtnet0_etc_check ]] ; then
+        vtnet0_dhcp_check=$( echo $vtnet0_etc_check | grep "\"SYNCDHCP\"" | wc -l | tr -d ' ' )
+        if [[ $vtnet0_dhcp_check -eq 0 ]] ; then
+           addwarn "Missing ifconfig_vtnet0=\"SYNCDHCP\" in /etc/rc.conf. Normally, this is needed to have Public Internet VirtIO NIC available on boot"   
+        fi
+     else
+        addwarn "Missing ifconfig_vtnet0=\"SYNCDHCP\" in /etc/rc.conf. Normally, this is needed to have Public Internet VirtIO NIC available on boot"   
+     fi     
+
+     vtnet1_etc_check=$(grep "ifconfig_vtnet1=" /etc/rc.conf | grep -v "#" )
+     if [[ ! -z $vtnet1_etc_check ]] ; then
+        vtnet1_dhcp_check=$( echo $vtnet1_etc_check | grep "\"SYNCDHCP\"" | wc -l | tr -d ' ' )
+        if [[ $vtnet1_dhcp_check -eq 0 ]] ; then
+           addwarn "Missing ifconfig_vtnet1=\"SYNCDHCP\" in /etc/rc.conf. Normally, this is needed to have Private Internet VirtIO NIC available on boot"   
+        fi
+     else
+        addwarn "Missing ifconfig_vtnet1=\"SYNCDHCP\" in /etc/rc.conf. Normally, this is needed to have Private Internet VirtIO NIC available on boot"   
+     fi     
+  fi 
+
+}
+
+# makes sure that all is in /lib/smartdc and configured for production
+check_lib_smartdc() {
+
+  # Make sure debugging is off on all scripts
+  for OUT in `grep -e "^DEBUG=" /lib/smartdc/*`; do
+    FILENAME=`echo $OUT | cut -d ':' -f 1`
+    DEBUG_LEVEL=`echo $OUT | cut -d '=' -f 2`
+    if [ $DEBUG_LEVEL -gt 0 ]; then
+       addwarn "Debug level is set to $DEBUG_LEVEL in $FILENAME"
+    fi
+  done
+
+  # Check that all files are in /lib/smartdc
+  # this is updaed as files change locations
+  FILELIST='disable-iptables format-secondary-disk get-motd joyent_dataset_changelog joyent_motd_footer joyent_product_info joyent_rc.local joyent_version lib_smartdc_scripts.cfg mdata-get prepare-image README run-user-script set-hostname set-root-authorized-keys'
+  for FILE in $FILELIST; do
+     if [ ! -f "/lib/smartdc/$FILE" ]; then
+        lib_smartdc_fatal "Missing needed file - /lib/smartdc/$FILE"   
+     fi
+  done
+
+  # Check for symlinks in /etc
+  LINKLIST='joyent_dataset_changelog joyent_version product'
+    for LINK in $LINKLIST; do
+     if [ ! -L "/etc/$LINK" ]; then
+        lib_smartdc_fatal "Missing sym link - /etc/$LINK"   
+     fi
+  done
+
+  # Make sure that call in /etc/rc.local to /lib/smartdc/joyent_rc.local
+  OUT=`grep -e "^(/lib/smartdc/joyent_rc.local)" /etc/rc.local`
+  if [ -z $OUT ]; then
+     lib_smartdc_fatal "Missing call in /etc/rc.local to /lib/smartdc/joyent_rc.local"
+  fi
+
+  # make sure that /lib/smartdc is owned by root
+  lib_smartdc_info "settng /lib/smartdc to be owned by root:wheel"
+  chown -R root:wheel /lib/smartdc
+}
+
+## MAIN ##
+
+# Make sure user is root
+lib_smartdc_check_root
+check_image_disk
+
+separator
+read -p "This script is specific for $TARGET_DISTRO and will delete and change lots of stuff. This is not meant to be ran on a production system. Are you sure you want to do this? " -n 1
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    echo  " "
+    echo  " "
+    lib_smartdc_fatal "User selected not to run $0 by hitting key that was not a 'Y' or 'y'"
+fi
+echo  " "
+echo  " "
+
+separator
+printf "Prepare-image\n"
+separator
+
+vendor=$(grep 'bsd_distro:' $JOYENT_VERSION_FILE | cut -d':' -f 2 | tr -d ' ')
+TARGET_DISTRO=$( echo $TARGET_DISTRO | tr '[:upper:]' '[:lower:]')
+
+if [ ${vendor} != $TARGET_DISTRO ]; then
+   lib_smartdc_fatal "OS ( $vendor ) not handled by this script ( $0 )"
+fi
+
+freebsd_fixes
+#prepare_freebsd
+
+check_lib_smartdc
+check_for_smartdc
+# cleanup_logs
+# cleanup_lock_files
+# cleanup_disks
+# cleanup_ssh
+# cleanup_root
+cleanup_other_users
+# cleanup_metadata
+cleanup_hostname
+
+exit
+
+copy_root_to_image_disk
+
+if [[ ${WARNING} != "" ]] ; then
+  printf "\n"
+  separator
+  printf "${WARNING}"
+  separator
+  printf "\n\n"
+  exit 1
+else
+  printf "\n"
+  separator
+  history -c
+  history -w
+  printf "(info) You may now shutdown and snapshot this system\n"
+  printf "(info) Make sure you take a snapshot of the zfs vol that holds ${IMAGE_DISK}1\n"
+  separator
+  printf "\n\n"
+  exit 0
+fi

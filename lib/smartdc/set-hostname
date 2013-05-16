@@ -1,0 +1,35 @@
+#!/usr/local/bin/bash
+#
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
+#
+
+# load common functions and vars
+. /lib/smartdc/lib_smartdc_scripts.cfg
+
+# set system host name in this order
+# 1) use /etc/hostname if it is not empty
+# 2) use Mdata hostname if set
+# 3) use what is sent from DHCP client to set hostname
+
+# if hostname is in /etc/rc.conf then we always use that first
+rc_conf_hostname=$(grep 'hostname' /etc/rc.conf | cut -d '=' -f 2 | tr -d '"')
+
+if [[ ! -z $rc_conf_hostname ]]; then
+      lib_smartdc_info "Using hostname set in /etc/rc.conf to set system hostname to: $rc_conf_hostname"
+      hostname "$rc_conf_hostname"
+      exit 0
+else
+   lib_smartdc_info "/etc/rc.conf does not have a valid hostname"
+fi 
+
+mdata_hostname=$($MDATA_GET_BIN "hostname" 2>>/dev/console)
+
+if [ $? -eq 0 -a ! -z "$mdata_hostname" ]; then  
+   lib_smartdc_info "Metadata hostname set to $mdata_hostname"
+   lib_smartdc_info "Setting hostname to $mdata_hostname"
+   hostname "$mdata_hostname"
+else
+      lib_smartdc_info "Setting hostname to what was received from DHCP server"
+fi
+
+exit 0

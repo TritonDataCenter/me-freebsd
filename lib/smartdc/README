@@ -1,0 +1,87 @@
+This set of smartdc scritps are FreeBSD specific
+
+The following files are used to intergrate your FreeBSD systme into Joyent Public Cloud.
+
+You should not have to change these files for your system to work.
+
+If you are having issues with your system please contact Joyent Support at: support@joyent.com
+
+
+Short Summary of files:
+
+- disable-iptables
+  Script that is uses Mdata to disable iptables on boot
+  This is useful for when customers are locked out of connecting to a system due to a bad firewall rule
+
+  More info on how to activate this on boot is at:
+  https://help.joyent.com/entries/22470606-recovering-from-IP-tables-locking-you-out
+  
+- format-secondary-disk
+  Script that created data disk on provisioning and /data mount point
+  Adds entry to /etc/fstab
+
+  By default the data disk is one usf partiton.
+
+- get-motd
+  Script that is called to get dynamic info from a Joyent server
+  By default this is disabled as it can cause a few seconds delay when SSHing into a system
+
+- joyent_dataset_changelog
+  list of changes in dataset
+
+- joyent_motd_footer
+  By default prints the Joyent logo wiht some basic information
+
+  More detailed system checks can be enabled to be displayed when you SSH in by:
+
+  set Mdata value enable_motd_sys_info to the string TRUE
+  
+  To bypass MDATA and always have sysinfo in MOTD uncomment this line in joyent_motd_footer 
+  # ENABLE_MOTD_SYS_INFO='TRUE'
+
+- joyent_product_info
+  file of values containing dataset information
+
+- joyent_rc.local
+  scripts called on boot via /etc/rc.local
+
+- joyent_version
+  file of values for dataset version
+
+- lib_smartdc_scripts.cfg
+  common functions and variables used by scripts in /lib/smartdc
+
+- mdata-get
+  script that uses the serial port to get Mdata information
+
+- prepare-image
+  script that customers must run to prepare a deveopment system for imaging
+ 
+  NOTE: do not run this on a production system
+
+  NOTE: prior to running this script you will have to contact Joyent Support to add an imaging disk to your system
+
+- README
+  text file full of useful stuff
+
+- run-user-script
+  gets user-script Mdata and executes values as a script
+
+  by default userscript is only ran on provisoning
+
+  The following documentation shows how you can enable userscript ran on each boot:
+  https://help.joyent.com/entries/22470716-running-user-script-on-each-reboot
+
+- set-hostname
+  script that allows customer so set hostname of system via Mdata
+
+  system hostname is set in this order:
+    1) use /etc/hostname if it is not empty
+    2) use Mdata value for field 'hostname' if set via API or my.joyentcloud.com
+    3) use what is sent from DHCP client to set hostname
+
+- set-root-authorized-keys
+  script that allows SSH keys to be updated on boot
+
+  The following documentation has more information on this process:
+  https://help.joyent.com/entries/23022808-updating-SSH-keys-on-Linux-systems-via-Mdata

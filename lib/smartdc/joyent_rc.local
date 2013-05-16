@@ -1,0 +1,22 @@
+#! /usr/local/bin/bash
+# 
+# Joyent specific scripts for Ubuntu datasets
+# that are ran on each boot
+# this is called from /etc/rc.local
+
+# load common functions and vars
+. /lib/smartdc/lib_smartdc_scripts.cfg
+
+# DO NOT use lib_smartdc_fatal in here
+# You want the rest of the init script to run
+# instead use info with ERROR
+# this will show up in logs and on console
+
+# scripts that can run on all systems
+(/lib/smartdc/set-hostname)
+(/lib/smartdc/set-root-authorized-keys)
+(/lib/smartdc/format-secondary-disk)
+(/lib/smartdc/run-user-script)
+(/lib/smartdc/disable-iptables)
+
+exit 0

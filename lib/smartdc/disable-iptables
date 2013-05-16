@@ -1,0 +1,37 @@
+#! /usr/local/bin/bash
+#
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
+
+# load common functions and vars
+. /lib/smartdc/lib_smartdc_scripts.cfg
+
+# set disable_iptables_flag to the string TRUE 
+# to disable iptables service 
+disable_iptables_flag=$($MDATA_GET_BIN disable_iptables_flag 2>>/dev/console)
+
+PFCTL=`which pfctl 2> /dev/null`
+IPF=`which ipf 2> /dev/null`
+IPFW=`which ipfw 2> /dev/null`
+
+
+if [ "$disable_iptables_flag" = "TRUE" -o "$disable_iptables_flag" = "true" -o "$disable_iptables_flag" = "True" ]; then     
+   lib_smartdc_info "Metadata field disable_iptables_flag set to - $disable_iptables_flag"
+
+   if [ -e /dev/pf ] ; then
+      lib_smartdc_info "Disabling pfctl"
+      $PFCTL -d 
+   fi
+
+   ipfstat 2>&1 /dev/null 
+   if [[ $? -ne 255 ]] ; then 
+      lib_smartdc_info "Disabling IPFILTER (IPF) Firewall"
+      $IPF -Fa 
+      $IPF -D 
+   fi
+
+   lib_smartdc_info "Disabling ipfw"
+   $IPFW disable firewall
+
+fi
+
+exit 0
