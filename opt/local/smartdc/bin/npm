@@ -1,0 +1,3 @@
+#!/bin/sh
+
+/opt/local/smartdc/bin/node "/opt/local/smartdc/bin/npm-cli.js" "$@"
