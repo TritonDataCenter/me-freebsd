@@ -9,8 +9,15 @@ If you are having issues with your system please contact Joyent Support at: supp
 
 Short Summary of files:
 
-- disable-iptables
-  Script that is uses Mdata to disable iptables on boot
+- duo-two-factor-configurator
+  Script that will use customer provided DUO account information and activate DUO two factor authentication via SSH
+
+  Customers first need to have a DUO account. More information can be found here:
+
+  https://www.duosecurity.com/joyent 
+
+- disable-firewall
+  Script that is uses Mdata to disable firewall on boot
   This is useful for when customers are locked out of connecting to a system due to a bad firewall rule
 
   More info on how to activate this on boot is at:
@@ -22,10 +29,6 @@ Short Summary of files:
 
   By default the data disk is one usf partiton.
 
-- get-motd
-  Script that is called to get dynamic info from a Joyent server
-  By default this is disabled as it can cause a few seconds delay when SSHing into a system
-
 - joyent_dataset_changelog
   list of changes in dataset
 
@@ -36,9 +39,6 @@ Short Summary of files:
 
   set Mdata value enable_motd_sys_info to the string TRUE
   
-  To bypass MDATA and always have sysinfo in MOTD uncomment this line in joyent_motd_footer 
-  # ENABLE_MOTD_SYS_INFO='TRUE'
-
 - joyent_product_info
   file of values containing dataset information
 

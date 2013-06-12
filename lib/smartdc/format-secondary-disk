@@ -1,6 +1,8 @@
 #! /usr/local/bin/bash
 
+#
 # Copyright 2013, Joyent Inc. All rights reserved
+#
 # formats the FreeeBSD secondary disk ( /dev/ada1p1 )
 # also refered to as the /data disk
 
@@ -10,8 +12,8 @@
 # load common functions and vars
 . /lib/smartdc/lib_smartdc_scripts.cfg
 
-DATADISKDEVICE='ada1'
-GPART=`which gpart 2> /dev/null`
+DATADISKDEVICE='vtbd1'
+GPART=/sbin/gpart
 
 checkformount() {
    fstest=$(df -h | grep "/dev/${DATADISKDEVICE}p1")
@@ -97,6 +99,14 @@ if [[ $fsentry -eq 0 ]] ; then
 else
   lib_smartdc_info "not adding as fstab entry already exist for /dev/${DATADISKDEVICE}p1"
 fi
+
+# fsck disk
+lib_smartdc_info "fscking /dev/${DATADISKDEVICE}p1"
+fsck -y -t ufs /dev/${DATADISKDEVICE}p1
+
+# enable journeling
+lib_smartdc_info "enabling journeling /dev/${DATADISKDEVICE}p1"
+tunefs -j enable /dev/${DATADISKDEVICE}p1
 
 # mount the data disk
 lib_smartdc_info "mounting /dev/${DATADISKDEVICE}p1 as /data"

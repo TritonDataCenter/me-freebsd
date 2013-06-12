@@ -1,5 +1,7 @@
 #! /usr/local/bin/bash
 # 
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
+#
 # Joyent specific scripts for Ubuntu datasets
 # that are ran on each boot
 # this is called from /etc/rc.local
@@ -17,6 +19,9 @@
 (/lib/smartdc/set-root-authorized-keys)
 (/lib/smartdc/format-secondary-disk)
 (/lib/smartdc/run-user-script)
-(/lib/smartdc/disable-iptables)
+(/lib/smartdc/disable-firewall)
+
+#DUO 2 Factor Auth
+#(/lib/smartdc/duo-two-factor-configurator)
 
 exit 0

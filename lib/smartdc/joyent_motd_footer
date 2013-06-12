@@ -1,5 +1,7 @@
 #!/usr/local/bin/bash
 #
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
+#
 # joyent_motd_footer  - write the Joyent footer to the MOTD
 # 
 # The Joyent MOTD does the following:

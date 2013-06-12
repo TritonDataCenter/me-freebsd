@@ -1,6 +1,6 @@
 #! /usr/local/bin/bash 
 #
-# Copyright (c) 2011 Joyent Inc., All rights reserved.
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
 #
 # Note: for boot scripts, FD 2 (stderr) should be redirected to /dev/console
 # by the caller so that metadata errors are noticed.
