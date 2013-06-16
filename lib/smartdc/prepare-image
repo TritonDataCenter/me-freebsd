@@ -540,13 +540,6 @@ prepare_freebsd() {
      addwarn "world read\write rights set for $MDATA_SERIAL_PORT - it is recommended that you limit access to only owner and group"
   fi
 
-  # make sure that link is in place for /etc/update-motd.d/99-joyent-footer
-  lib_smartdc_info "verify dynmaic MOTD freebsd is configured"
-  out=$(grep "/lib/smartdc/joyent_motd_footer" /etc/rc.d/motd | grep -v "#" | wc -l | tr -d ' ')
-  if [[ $out -eq 0 ]] ; then
-    lib_smartdc_fatal "dynamic motd is not configured. Need to add /lib/smartdc/joyent_motd_footer in /etc/rc.d/motd" 
-  fi
-
   # make sure sshd is running at boot
   out=$(grep -iE 'sshd_enable=\"yes\"' /etc/rc.conf | wc -l | tr -d ' ')
   if [[ $out -eq 0 ]] ; then

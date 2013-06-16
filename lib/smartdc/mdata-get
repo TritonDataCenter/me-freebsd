@@ -36,33 +36,51 @@ fi
 NC_SOCK=
 DISABLE_ECHO="yes"
 TIMEOUT=5
+SERIAL_DEV=$MDATA_SERIAL_PORT
 
-case `uname -s | tr '[:upper:]' '[:lower:]'` in
-    linux)
-        SERIAL_DEV="/dev/ttyS1"
-        if [ ! -e $SERIAL_DEV ]; then
-          lib_smartdc_info "ERROR: $SERIAL_DEV does not exist"
-          exit 4
-        fi
-    ;;
-    freebsd)
-        SERIAL_DEV="/dev/cuau1"
-        # set serial baud higher so it does not time out
-        stty -f /dev/cuau1.init 115200
-        if [ ! -e $SERIAL_DEV ]; then
-          lib_smartdc_info "ERROR: $SERIAL_DEV does not exist"
-          exit 4
-        fi
-    ;;
-    sunos)
-        NC_SOCK="/var/run/smartdc/metadata.sock"
-        DISABLE_ECHO="no"
-    ;;
-    *)
-        lib_smartdc_info "ERROR: Don't know which serial to use for $(uname -s)"
-        exit 3
-    ;;
-esac
+if [ ! -e $SERIAL_DEV ]; then
+  lib_smartdc_info "ERROR: $SERIAL_DEV does not exist"
+  exit 4
+fi
+
+# set serial baud higher so it does not time out
+stty -f ${SERIAL_DEV}.init 115200
+
+# Check to see if user running the script had permissions to SERIAL_DEV
+# only checking for non-root users
+user=$(whoami)
+if [[ $EUID != 0 ]] ; then
+  lib_smartdc_log "WARNING: non-root user ( $user / $EUID ) running $0"
+
+  # see if serial device is world readable
+  world_read_rights=$( /usr/bin/stat -c %A $SERIAL_DEV | cut -c 8 )
+  world_write_rights=$( /usr/bin/stat -c %A $SERIAL_DEV | cut -c 9 )
+  if [ "$world_read_rights" == "r" -a "$world_write_rights" == "w" ]; then
+     lib_smartdc_log "WARNING: world read\write rights set for $SERIAL_DEV"
+  else
+     serial_dev_group=$( /usr/bin/stat -c %G $SERIAL_DEV )
+     user_in_serial_dev_group=$( /usr/bin/groups | grep $serial_dev_group | wc -l )
+     # see if user is in serial device group
+     if [ $user_in_serial_dev_group -eq 0 ]; then
+       lib_smartdc_info "WARNING: user ( $user ) not in group with read rights for $SERIAL_DEV"
+       lib_smartdc_info "exiting $0 as user can not get mdata. Add user ( $user ) to $serial_dev_group for them to run this script"
+       exit 5
+     else
+       # see if serial device group is readable
+       group_read_rights=$( /usr/bin/stat -c %A $SERIAL_DEV | cut -c 5 )
+       group_write_rights=$( /usr/bin/stat -c %A $SERIAL_DEV | cut -c 6 )
+
+       if [ "$group_read_rights" != "r" -o "$group_write_rights" != "w" ]; then
+         lib_smartdc_info "WARNING: group does not have read\write rights for $SERIAL_DEV"
+         lib_smartdc_info "exiting $0 as user can not get mdata. Add read\write permissions for $serial_dev_group to $SERIAL_DEV for them to run this script"
+         exit 6
+      fi
+    fi
+  fi
+fi
+
+# If we make it here user can access serial device to get mdata
+lib_smartdc_log "$user accessing $SERIAL_DEV to get meta data for $key"
 
 if [[ -n ${NC_SOCK} ]]; then
     coproc nc -U ${NC_SOCK}
