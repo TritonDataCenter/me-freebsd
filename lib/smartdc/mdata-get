@@ -12,7 +12,8 @@
 # 2 - error getting metadata for key
 # 3 - invalid usage
 # 4 - serial device not found 
-#
+# 5 - user not part of serial device group
+# 6 - group does not have read/write perms for serial device
 
 # load common functions and vars
 . /lib/smartdc/lib_smartdc_scripts.cfg
@@ -56,7 +57,7 @@ if [[ $EUID != 0 ]] ; then
   world_read_rights=$( /usr/bin/stat -c %A $SERIAL_DEV | cut -c 8 )
   world_write_rights=$( /usr/bin/stat -c %A $SERIAL_DEV | cut -c 9 )
   if [ "$world_read_rights" == "r" -a "$world_write_rights" == "w" ]; then
-     lib_smartdc_log "WARNING: world read\write rights set for $SERIAL_DEV"
+     lib_smartdc_log "WARNING: world read/write rights set for $SERIAL_DEV"
   else
      serial_dev_group=$( /usr/bin/stat -c %G $SERIAL_DEV )
      user_in_serial_dev_group=$( /usr/bin/groups | grep $serial_dev_group | wc -l )

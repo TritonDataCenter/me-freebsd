@@ -5,8 +5,12 @@
 #
 # Update Subject
 #    details or update
-06/01/2013 - 1.0.0 ( Install from ISO )
+06/14/2013 - 1.0.0 ( Install from ISO )
 
-Added VirtIO modules from ports (/usr/ports/kld )
-Recompiled GENERIC Kernel to include DTrace
+Added virtio modules from ports (/usr/ports/emulator)
+Recompiled GENERIC Kernel to:
+ * include DTrace, SC_TWOBUTTON_MOUSE
+ * disabled all RAID, WIRELESS, PCMCIA, NICS (except em), FireWire, and Sound drivers
 Enable DTrace by default in /boot/loader.conf
+Added Duo Security in /opt/local/duo
+Preinstalled: bash, tcsh, zsh, gmake, vim, sudo, git, and subversion

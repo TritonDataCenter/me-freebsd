@@ -21,7 +21,7 @@ print_dataset_info() {
    CDT=`grep -w custom_dataset_type $JOYENT_VERSION_FILE | cut -d: -f2 | tr -d ' ' | tr -d '\n' 2> /dev/null`
    CDV=`grep -w custom_dataset_version $JOYENT_VERSION_FILE | cut -d: -f2 | tr -d ' ' | tr -d '\n' 2> /dev/null`
    KV=`$UNAME_BIN -r | tr -d '\n' 2> /dev/null`
-   JPN=`grep -w Name $JOYENT_PRODUCT_FILE | cut -d: -f2-3 | sed 's/joyent//gI' | tr -d ' ' | tr -d '\n' 2> /dev/null`
+   JPN=`grep -w Name $JOYENT_PRODUCT_FILE | cut -d: -f2-3 | sed -E '/joyent/Is///' | tr -d ' ' | tr -d '\n' 2> /dev/null`
    DOC_URL=`grep -w Documentation $JOYENT_PRODUCT_FILE | cut -d: -f2-3 | tr -d ' ' | tr -d '\n' 2> /dev/null`
 
    echo "   __        .                   ."

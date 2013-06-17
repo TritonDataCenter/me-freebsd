@@ -20,25 +20,18 @@ Short Summary of files:
   Script that is uses Mdata to disable firewall on boot
   This is useful for when customers are locked out of connecting to a system due to a bad firewall rule
 
-  More info on how to activate this on boot is at:
-  https://help.joyent.com/entries/22470606-recovering-from-IP-tables-locking-you-out
-  
 - format-secondary-disk
   Script that created data disk on provisioning and /data mount point
   Adds entry to /etc/fstab
 
-  By default the data disk is one usf partiton.
+  By default the data disk is one ufs partiton.
 
 - joyent_dataset_changelog
   list of changes in dataset
 
 - joyent_motd_footer
-  By default prints the Joyent logo wiht some basic information
+  prints the Joyent motd
 
-  More detailed system checks can be enabled to be displayed when you SSH in by:
-
-  set Mdata value enable_motd_sys_info to the string TRUE
-  
 - joyent_product_info
   file of values containing dataset information
 
@@ -58,7 +51,6 @@ Short Summary of files:
   script that customers must run to prepare a deveopment system for imaging
  
   NOTE: do not run this on a production system
-
   NOTE: prior to running this script you will have to contact Joyent Support to add an imaging disk to your system
 
 - README
