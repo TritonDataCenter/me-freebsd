@@ -1,9 +1,7 @@
-#! /usr/local/bin/bash
+#! /bin/s
 # 
 # Copyright (c) 2013 Joyent Inc., All rights reserved.
 #
-# load common functions and vars
-. /lib/smartdc/lib_smartdc_scripts.cfg
 
 # DO NOT use lib_smartdc_fatal in here
 # You want the rest of the init script to run
@@ -11,12 +9,12 @@
 # this will show up in logs and on console
 
 # scripts that can run on all systems
-(/lib/smartdc/set-hostname)
-(/lib/smartdc/set-root-authorized-keys)
-(/lib/smartdc/format-secondary-disk)
-(/lib/smartdc/run-user-script)
+/lib/smartdc/set-hostname
+/lib/smartdc/set-root-authorized-keys
+/lib/smartdc/format-secondary-disk
+/lib/smartdc/run-user-script
 
 #DUO 2 Factor Auth
-#(/lib/smartdc/duo-two-factor-configurator)
+#/lib/smartdc/duo-two-factor-configurator
 
 exit 0
