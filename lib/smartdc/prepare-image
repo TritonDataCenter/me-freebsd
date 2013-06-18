@@ -108,13 +108,20 @@ prepare_image_disk() {
 
    # format image root partition
    lib_smartdc_info "Making filesystem on image root disk $ROOT_DISK"
-   out=`newfs -J -L ROOT $ROOT_DISK` 
+   out=`newfs -L ROOT $ROOT_DISK` 
    if [[  $? -ne 0 ]]; then
       lib_smartdc_fatal "Failed to make filesystem on image root disk ( $ROOT_DISK ). Run newfs -L ROOT $ROOT_DISK for more info"
    fi
 
    # nothing needed for swap partition, but we will give some feedback anyway
    lib_smartdc_info "Making swap filesystem on swap disk $SWAP_DISK"
+
+   # fsck the disks to make sure they are clean
+   lib_smartdc_info "fscking ${IMAGE_DISK}p2"
+   fsck -y -t ufs ${IMAGE_DISK}p2
+
+   # tunefs
+   tunefs -j enable /dev/${IMAGE_DISK}p2
 }
 
 check_image_disk () {
@@ -240,7 +247,7 @@ copy_root_to_image_disk() {
      lib_smartdc_fatal "Failed to mount ${IMAGE_DISK}p2 on $TARGET_ROOT_MNT_POINT"
   fi
 
-  # copy files from source root disk ( /dev/vtbd1 ) to target root disk ( /dev/vtbd2 )
+  # copy files from source root disk ( /dev/vtbd0 ) to target root disk ( /dev/vtbd2 )
   lib_smartdc_info "archive file copy from / to $TARGET_ROOT_MNT_POINT ( this can take up to 5 min )"
   cp -ax / $TARGET_ROOT_MNT_POINT
 
@@ -250,13 +257,6 @@ copy_root_to_image_disk() {
 
   # unmount $TARGET_ROOT_MNT_POINT
   umount $TARGET_ROOT_MNT_POINT
-
-  # fsck the disks to make sure they are clean
-  lib_smartdc_info "fscking ${IMAGE_DISK}p2"
-  fsck -y -t ufs ${IMAGE_DISK}p2 
-
-  # tunefs
-  tunefs -j enable /dev/${IMAGE_DISK}p2
 
   # remove root target image root mount dir
   if [[ -d $TARGET_ROOT_MNT_POINT ]]; then
@@ -365,7 +365,7 @@ cleanup_ssh() {
 
   # remove /root/.ssh files
   # if you need these files on provisioning please use config management 
-  FILELIST='authorized_keys known_hosts id_dsa id_dsa.pub id_rsa id_rsa.pub ssh_config'
+  FILELIST='authorized_keys known_hosts id_dsa id_dsa.pub id_rsa id_rsa.pub config'
   for FILE in $FILELIST; do
      if [ -f "/root/.ssh/$FILE" ]; then
         rm -r /root/.ssh/$FILE
@@ -380,6 +380,7 @@ cleanup_disks() {
   if [[ $out -ne 0 ]] ; then
      lib_smartdc_info "removing /dev/vtbd1p1 entries from fstab"
      sed -iE '/^\/dev\/vtbd1p1/d' /etc/fstab
+     rm -f /etc/fstabE
   fi
 }
 
@@ -400,9 +401,7 @@ cleanup_hostname() {
 
   lib_smartdc_info "removing hostname"
   sed -iE '/^hostname=.*/s//hostname=\"\"/' /etc/rc.conf
-  if [ -e /etc/hostname ] ; then
-     rm -f /etc/hostname
-  fi
+  rm -f /etc/rc.confE
 }
 
 prepare_freebsd() {
@@ -431,7 +430,7 @@ prepare_freebsd() {
     fi
 
     out=$(stat -f %u $DUO_LOGIN_CONFIG)
-    if [[ ${out} -ne 0 ]]; then
+    if [[ ${out} -ne 22 ]]; then
       addwarn "$DUO_LOGIN_CONFIG must be owned by root. Permissions are currently set to owner $out"
     fi
 
@@ -634,7 +633,9 @@ check_lib_smartdc() {
   LINKLIST='joyent_dataset_changelog joyent_version product'
     for LINK in $LINKLIST; do
      if [ ! -L "/etc/$LINK" ]; then
-        lib_smartdc_fatal "Missing sym link - /etc/$LINK"   
+	addwarn "Missing sym link - /etc/$LINK"          
+        lib_smartdc_info "creating sym link - /etc/$LINK"
+        ln -s $LINK /etc/$LINK
      fi
   done
 
@@ -659,7 +660,7 @@ check_image_disk
 
 # ask if they really want to do this
 separator
-read -p "This script is specific for $TARGET_DISTRO and will delete and change lots of stuff. This is not meant to be ran on a production system. Are you sure you want to do this? " -n 1
+read -p "This script is specific for $TARGET_DISTRO and will delete and change lots of stuff. This is not meant to be ran on a production system. Are you sure you want to do this? [Y/N] " -n 1
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
     echo  " "
@@ -703,7 +704,7 @@ else
   printf "\n"
   separator
   printf "(info) You may now create an image of this system using disk2 ( $IMAGE_DISK )\n"
-  printf "(info) Make sure you take a snapshot of the zfs vol that holds ${IMAGE_DISK}1\n"
+  printf "(info) Make sure you take a snapshot of the zfs vol that holds ${IMAGE_DISK}\n"
   separator
   printf "\n\n"
   exit 0

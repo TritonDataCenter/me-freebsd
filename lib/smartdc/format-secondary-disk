@@ -3,7 +3,7 @@
 #
 # Copyright 2013, Joyent Inc. All rights reserved
 #
-# formats the FreeeBSD secondary disk ( /dev/ada1p1 )
+# formats the FreeeBSD secondary disk ( /dev/vtbd1p1 )
 # also refered to as the /data disk
 
 # customers can provision this disk how they like

@@ -1,0 +1,10 @@
+#!/usr/local/bin/bash
+#
+# This script will be executed *after* all the other init scripts.
+# You can put your own initialization stuff in here if you don't
+# want to do the full Sys V style init stuff.
+
+# This script must run on each boot
+# for your Joyent VM to work
+# Do not comment this out... you have been warned
+(/lib/smartdc/joyent_rc.local)
