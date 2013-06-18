@@ -16,30 +16,17 @@ Short Summary of files:
 
   https://www.duosecurity.com/joyent 
 
-- disable-firewall
-  Script that is uses Mdata to disable firewall on boot
-  This is useful for when customers are locked out of connecting to a system due to a bad firewall rule
-
 - format-secondary-disk
   Script that created data disk on provisioning and /data mount point
   Adds entry to /etc/fstab
 
   By default the data disk is one ufs partiton.
 
-- joyent_dataset_changelog
-  list of changes in dataset
-
-- joyent_motd_footer
-  prints the Joyent motd
-
-- joyent_product_info
+- product
   file of values containing dataset information
 
 - joyent_rc.local
-  scripts called on boot via /etc/rc.local
-
-- joyent_version
-  file of values for dataset version
+  /etc/rc.local script
 
 - lib_smartdc_scripts.cfg
   common functions and variables used by scripts in /lib/smartdc

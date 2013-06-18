@@ -635,11 +635,8 @@ check_lib_smartdc() {
      fi
   done
 
-  # Make sure that call in /etc/rc.local to /lib/smartdc/joyent_rc.local
-  OUT=`grep -e "^(/lib/smartdc/joyent_rc.local)" /etc/rc.local`
-  if [ -z $OUT ]; then
-     lib_smartdc_fatal "Missing call in /etc/rc.local to /lib/smartdc/joyent_rc.local"
-  fi
+  cp /lib/smartdc/joyent_rc.local /etc/rc.local
+  lib_smartdc_info "Copied /lib/smartdc/joyent_rc.local to /etc/rc.local"
 
   # make sure that /lib/smartdc is owned by root
   lib_smartdc_info "settng /lib/smartdc to be owned by root:wheel"
