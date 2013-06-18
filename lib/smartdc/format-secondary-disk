@@ -110,7 +110,7 @@ tunefs -j enable /dev/${DATADISKDEVICE}p1
 
 # mount the data disk
 lib_smartdc_info "mounting /dev/${DATADISKDEVICE}p1 as /data"
-$MOUNT_BIN /data
+mount /data
 
 checkformount
 return_val=$?

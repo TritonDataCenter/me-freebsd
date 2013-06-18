@@ -19,7 +19,6 @@
 (/lib/smartdc/set-root-authorized-keys)
 (/lib/smartdc/format-secondary-disk)
 (/lib/smartdc/run-user-script)
-(/lib/smartdc/disable-firewall)
 
 #DUO 2 Factor Auth
 #(/lib/smartdc/duo-two-factor-configurator)

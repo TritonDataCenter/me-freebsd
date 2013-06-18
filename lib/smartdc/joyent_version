@@ -1,7 +1,0 @@
-bsd_distro: freebsd
-bsd_distro_version: 9.1 
-bsd_distro_name: 9.1-RELENG
-joyent_dataset_version: 1.0.0
-custom_dataset_customer:
-custom_dataset_type:
-custom_dataset_version:

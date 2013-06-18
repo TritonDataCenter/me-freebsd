@@ -14,10 +14,6 @@
 # load common functions and vars
 . /lib/smartdc/lib_smartdc_scripts.cfg
 
-# target distro that this script is engineered for 
-# Please do not change this as it is a QA check to
-# ensure that all is getting done to make good images
-TARGET_DISTRO='freebsd'
 
 # Disk that is copied from for images
 SOURCE_DISK='vtbd0'
@@ -541,7 +537,7 @@ prepare_freebsd() {
 freebsd_fixes() {
   # specific fixes for freebsd
 
-  FREEBSD_VERSION=$(grep "bsd_distro_version:" $JOYENT_VERSION_FILE | cut -d':' -f 2 | tr -d ' ')
+  FREEBSD_VERSION="9.1"
 
   # Specific fixes for freebsd version 9.1 
   if [[ $FREEBSD_VERSION == "9.1" ]] ; then
@@ -622,7 +618,7 @@ check_lib_smartdc() {
 
   # Check that all files are in /lib/smartdc
   # this is updaed as files change locations
-  FILELIST='duo-two-factor-configurator disable-firewall format-secondary-disk joyent_dataset_changelog joyent_motd_footer joyent_product_info joyent_rc.local joyent_version lib_smartdc_scripts.cfg mdata-get prepare-image README run-user-script set-hostname set-root-authorized-keys'
+  FILELIST='duo-two-factor-configurator format-secondary-disk product joyent_rc.local lib_smartdc_scripts.cfg mdata-get prepare-image README run-user-script set-hostname set-root-authorized-keys'
   for FILE in $FILELIST; do
      if [ ! -f "/lib/smartdc/$FILE" ]; then
         lib_smartdc_fatal "Missing needed file - /lib/smartdc/$FILE"   
@@ -630,12 +626,12 @@ check_lib_smartdc() {
   done
 
   # Check for symlinks in /etc
-  LINKLIST='joyent_dataset_changelog joyent_version product'
+  LINKLIST='product'
     for LINK in $LINKLIST; do
      if [ ! -L "/etc/$LINK" ]; then
 	addwarn "Missing sym link - /etc/$LINK"          
         lib_smartdc_info "creating sym link - /etc/$LINK"
-        ln -s $LINK /etc/$LINK
+        ln -sf /lib/smartdc/$LINK /etc/$LINK
      fi
   done
 
@@ -660,7 +656,7 @@ check_image_disk
 
 # ask if they really want to do this
 separator
-read -p "This script is specific for $TARGET_DISTRO and will delete and change lots of stuff. This is not meant to be ran on a production system. Are you sure you want to do this? [Y/N] " -n 1
+read -p "This script is specific for FreeBSD and will delete and change lots of stuff. This is not meant to be ran on a production system. Are you sure you want to do this? [Y/N] " -n 1
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
     echo  " "
@@ -669,13 +665,6 @@ then
 fi
 echo  " "
 echo  " "
-
-# check to make sure it is proper system for this version of prepare-image
-vendor=$(grep 'bsd_distro:' $JOYENT_VERSION_FILE | cut -d':' -f 2 | tr -d ' ')
-TARGET_DISTRO=$( echo $TARGET_DISTRO | tr '[:upper:]' '[:lower:]')
-if [ ${vendor} != $TARGET_DISTRO ]; then
-   lib_smartdc_fatal "OS ( $vendor ) not handled by this script ( $0 )"
-fi
 
 # specific things to do per diff version of freebsd
 freebsd_fixes

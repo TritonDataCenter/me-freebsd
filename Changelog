@@ -13,4 +13,4 @@ Recompiled GENERIC Kernel to:
  * disabled all RAID, WIRELESS, PCMCIA, NICS (except em), FireWire, and Sound drivers
 Enable DTrace by default in /boot/loader.conf
 Added Duo Security in /opt/local/duo
-Preinstalled: bash, tcsh, zsh, gmake, vim, sudo, git, and subversion
+Preinstalled: bash, zsh, gmake, vim, libexecinfo, autoconf, automake, libtool, git, and subversion
