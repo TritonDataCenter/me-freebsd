@@ -9,7 +9,6 @@
 # this will show up in logs and on console
 
 # scripts that can run on all systems
-/lib/smartdc/set-hostname
 /lib/smartdc/set-root-authorized-keys
 /lib/smartdc/format-secondary-disk
 /lib/smartdc/run-user-script

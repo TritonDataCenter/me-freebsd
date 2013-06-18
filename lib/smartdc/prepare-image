@@ -392,14 +392,6 @@ cleanup_metadata() {
   fi
 }
 
-cleanup_hostname() {
-  # remove any existing hostnames
-
-  lib_smartdc_info "removing hostname"
-  sed -iE '/^hostname=.*/s//hostname=\"\"/' /etc/rc.conf
-  rm -f /etc/rc.confE
-}
-
 prepare_freebsd() {
   # FreeBSD specific commands go here
   
@@ -618,7 +610,7 @@ check_lib_smartdc() {
 
   # Check that all files are in /lib/smartdc
   # this is updaed as files change locations
-  FILELIST='duo-two-factor-configurator format-secondary-disk product joyent_rc.local lib_smartdc_scripts.cfg mdata-get prepare-image README run-user-script set-hostname set-root-authorized-keys'
+  FILELIST='duo-two-factor-configurator format-secondary-disk product joyent_rc.local lib_smartdc_scripts.cfg mdata-get prepare-image README run-user-script set-root-authorized-keys'
   for FILE in $FILELIST; do
      if [ ! -f "/lib/smartdc/$FILE" ]; then
         lib_smartdc_fatal "Missing needed file - /lib/smartdc/$FILE"   
@@ -673,7 +665,6 @@ cleanup_ssh
 cleanup_root
 cleanup_other_users
 cleanup_metadata
-cleanup_hostname
 copy_root_to_image_disk
 
 if [[ ${WARNING} != "" ]] ; then

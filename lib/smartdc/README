@@ -51,14 +51,6 @@ Short Summary of files:
   The following documentation shows how you can enable userscript ran on each boot:
   https://help.joyent.com/entries/22470716-running-user-script-on-each-reboot
 
-- set-hostname
-  script that allows customer so set hostname of system via Mdata
-
-  system hostname is set in this order:
-    1) use /etc/hostname if it is not empty
-    2) use Mdata value for field 'hostname' if set via API or my.joyentcloud.com
-    3) use what is sent from DHCP client to set hostname
-
 - set-root-authorized-keys
   script that allows SSH keys to be updated on boot
 
