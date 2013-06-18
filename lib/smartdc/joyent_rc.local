@@ -2,10 +2,6 @@
 # 
 # Copyright (c) 2013 Joyent Inc., All rights reserved.
 #
-# Joyent specific scripts for Ubuntu datasets
-# that are ran on each boot
-# this is called from /etc/rc.local
-
 # load common functions and vars
 . /lib/smartdc/lib_smartdc_scripts.cfg
 
