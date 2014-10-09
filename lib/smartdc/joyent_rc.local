@@ -9,8 +9,9 @@
 # this will show up in logs and on console
 
 # scripts that can run on all systems
-/lib/smartdc/set-root-authorized-keys
-/lib/smartdc/format-secondary-disk
-/lib/smartdc/run-user-script
+(/lib/smartdc/set-root-authorized-keys)
+(/lib/smartdc/format-secondary-disk)
+(/lib/smartdc/run-operator-script)
+(/lib/smartdc/run-user-script)
 
 exit 0
