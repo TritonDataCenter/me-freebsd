@@ -408,52 +408,6 @@ prepare_freebsd() {
 
   # Remove entropy
   find /var/db/entropy/ -type f -name "saved-entropy.*" | xargs rm -f
-  
-  if [[ ! -f $DUO_LOGIN_CONFIG ]]; then
-    addwarn "DUO login config file not found. $DUO_LOGIN_CONFIG is required for DUO two factor SSH support"
-  else
-    out=$(stat -f %p $DUO_LOGIN_CONFIG)
-    if [[ ${out} -ne 100600 ]]; then
-      addwarn "$DUO_LOGIN_CONFIG must be read only by root. Permissions are currently set to $out"
-    fi
-
-    out=$(stat -f %u $DUO_LOGIN_CONFIG)
-    if [[ ${out} -ne 22 ]]; then
-      addwarn "$DUO_LOGIN_CONFIG must be owned by root. Permissions are currently set to owner $out"
-    fi
-
-    # Check to see that no DUO info is set in config file
-    duo_config_ikey=$( grep "^ikey" $DUO_LOGIN_CONFIG | cut -d "=" -f2 | tr -d ' ' )
-    duo_config_skey=$( grep "^skey" $DUO_LOGIN_CONFIG | cut -d "=" -f2 | tr -d ' ' )
-    duo_config_host=$( grep "^host" $DUO_LOGIN_CONFIG | cut -d "=" -f2 | tr -d ' ' )
-
-    if [ ! -z $duo_config_ikey ]; then
-      addwarn "ikey set in $DUO_LOGIN_CONFIG. This should not be set on default images... unless you really want it set."
-    fi
-
-    if [ ! -z $duo_config_skey ]; then
-      addwarn "skey set in $DUO_LOGIN_CONFIG. This should not be set on default images... unless you really want it set."
-    fi
-
-    if [ ! -z $duo_config_host ]; then
-      addwarn "host set in $DUO_LOGIN_CONFIG. This should not be set on default images... unless you really want it set."
-    fi
-
-    out=$(stat -f %g $DUO_LOGIN_CONFIG)
-    if [[ ${out} -ne 0 ]]; then
-      addwarn "$DUO_LOGIN_CONFIG must be in the group root. Permissions are currently set to group $out"
-    fi
-  fi
-
-  if [[ ! -f $DUO_LOGIN_BIN ]]; then
-    addwarn "DUO longin binary is not in $DUO_LOGIN_BIN. This is needed for DUO two factor authentication"
-  fi
-
-  # Check to see if DUO is configured in SSHD config file
-  out=$( grep "^ForceCommand" /etc/ssh/sshd_config | grep $DUO_LOGIN_BIN | wc -l )
-  if [ $out -ne 0 ]; then
-    addwarn "DUO is active in SSHD config file. This should not be set on default images... unless you really want it set."
-  fi
 
   # check that serial port used for Meta data is readable by root and group
   if [ ! -e "$MDATA_SERIAL_PORT" ]; then
@@ -610,7 +564,7 @@ check_lib_smartdc() {
 
   # Check that all files are in /lib/smartdc
   # this is updaed as files change locations
-  FILELIST='duo-two-factor-configurator format-secondary-disk product joyent_rc.local lib_smartdc_scripts.cfg mdata-get prepare-image README run-user-script set-root-authorized-keys'
+  FILELIST='format-secondary-disk product joyent_rc.local lib_smartdc_scripts.cfg mdata-get prepare-image README run-user-script set-root-authorized-keys'
   for FILE in $FILELIST; do
      if [ ! -f "/lib/smartdc/$FILE" ]; then
         lib_smartdc_fatal "Missing needed file - /lib/smartdc/$FILE"   

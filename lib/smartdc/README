@@ -9,13 +9,6 @@ If you are having issues with your system please contact Joyent Support at: supp
 
 Short Summary of files:
 
-- duo-two-factor-configurator
-  Script that will use customer provided DUO account information and activate DUO two factor authentication via SSH
-
-  Customers first need to have a DUO account. More information can be found here:
-
-  https://www.duosecurity.com/joyent 
-
 - format-secondary-disk
   Script that created data disk on provisioning and /data mount point
   Adds entry to /etc/fstab

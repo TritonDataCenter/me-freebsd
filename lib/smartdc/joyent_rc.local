@@ -13,7 +13,4 @@
 /lib/smartdc/format-secondary-disk
 /lib/smartdc/run-user-script
 
-#DUO 2 Factor Auth
-#/lib/smartdc/duo-two-factor-configurator
-
 exit 0
