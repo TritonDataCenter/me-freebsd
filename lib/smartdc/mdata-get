@@ -22,7 +22,7 @@
 #       use lib_smartdc_info instead and let this script
 #       exit with own codes
 
-if [ $DEBUG -gt 5 ]; then
+if [[ $DEBUG -gt 5 ]]; then
   set -o xtrace
 fi
 
@@ -39,7 +39,7 @@ DISABLE_ECHO="yes"
 TIMEOUT=5
 SERIAL_DEV=$MDATA_SERIAL_PORT
 
-if [ ! -e $SERIAL_DEV ]; then
+if [[ ! -e $SERIAL_DEV ]]; then
   lib_smartdc_info "ERROR: $SERIAL_DEV does not exist"
   exit 4
 fi
@@ -56,13 +56,13 @@ if [[ $EUID != 0 ]] ; then
   # see if serial device is world readable
   world_read_rights=$( /usr/bin/stat -c %A $SERIAL_DEV | cut -c 8 )
   world_write_rights=$( /usr/bin/stat -c %A $SERIAL_DEV | cut -c 9 )
-  if [ "$world_read_rights" == "r" -a "$world_write_rights" == "w" ]; then
+  if [[ "$world_read_rights" == "r" -a "$world_write_rights" == "w" ]]; then
      lib_smartdc_log "WARNING: world read/write rights set for $SERIAL_DEV"
   else
      serial_dev_group=$( /usr/bin/stat -c %G $SERIAL_DEV )
      user_in_serial_dev_group=$( /usr/bin/groups | grep $serial_dev_group | wc -l )
      # see if user is in serial device group
-     if [ $user_in_serial_dev_group -eq 0 ]; then
+     if [[ $user_in_serial_dev_group -eq 0 ]]; then
        lib_smartdc_info "WARNING: user ( $user ) not in group with read rights for $SERIAL_DEV"
        lib_smartdc_info "exiting $0 as user can not get mdata. Add user ( $user ) to $serial_dev_group for them to run this script"
        exit 5
@@ -71,7 +71,7 @@ if [[ $EUID != 0 ]] ; then
        group_read_rights=$( /usr/bin/stat -c %A $SERIAL_DEV | cut -c 5 )
        group_write_rights=$( /usr/bin/stat -c %A $SERIAL_DEV | cut -c 6 )
 
-       if [ "$group_read_rights" != "r" -o "$group_write_rights" != "w" ]; then
+       if [[ "$group_read_rights" != "r" -o "$group_write_rights" != "w" ]]; then
          lib_smartdc_info "WARNING: group does not have read\write rights for $SERIAL_DEV"
          lib_smartdc_info "exiting $0 as user can not get mdata. Add read\write permissions for $serial_dev_group to $SERIAL_DEV for them to run this script"
          exit 6

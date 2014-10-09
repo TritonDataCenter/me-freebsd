@@ -16,7 +16,7 @@
 run_userscript_flag=$($MDATA_GET_BIN run_userscript_flag 2>>/dev/console)
 
 userscript_flag=$(echo $run_userscript_flag | tr '[:upper:]' '[:lower:]')
-if [ "$userscript_flag" = "true" ]; then
+if [[ "$userscript_flag" = "true" ]]; then
   lib_smartdc_info "Metadata field run_userscript_flag set to - $run_userscript_flag"
   lib_smartdc_info "Removing $USER_SCRIPT_LOCKFILE"
   rm -f $USER_SCRIPT_LOCKFILE
