@@ -12,8 +12,10 @@
 # set overwrite_root_akeys to the string OVERWRITE 
 # to overwrite root authorized_keys on reboot
 overwrite_authorized_flag=$($MDATA_GET_BIN overwrite_root_akeys 2>>/dev/console)
+# Convert to lowercase
+overwrite_flag=$(echo $overwrite_authorized_flag | tr '[:upper:]' '[:lower:]')
 
-if [[ "$overwrite_authorized_flag" = "OVERWRITE" -o "$overwrite_authorized_flag" = "overwrite" -o "$overwrite_authorized_flag" = "Overwrite" ]]; then  
+if [[ "$overwrite_flag" == "overwrite"  ]]; then  
    lib_smartdc_info "Metadata fiels overwrite_root_akeys set to - $overwrite_authorized_flag - Overwriting /root/.ssh/authorized_keys"
    lib_smartdc_info "Removine /root/.ssh/authorized_keys"
    rm -f /root/.ssh/authorized_keys
