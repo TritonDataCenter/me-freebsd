@@ -42,49 +42,6 @@ separator() {
   printf "\n"
 }
 
-check_for_smartdc() {
-# Joyent installs a custom install of Node.JS and smartdc 
-# This checks to ensure that this is installed
-
-  lib_smartdc_info "checking for JPC install of the JPC Cloud API utilties Node.JS SmartDC"
-  if [[ ! -d /opt/local/smartdc ]] ; then
-     lib_smartdc_info "MISSING /opt/local/smartdc - JPC Cloud API utilties Node.JS SmartDC NOT installed"
-     addwarn "Missing install of JPC Cloud API utilties Node.JS SmartDC in /opt/local/smartdc"
-     addwarn "This is not fatal and your system will run ok"
-     addwarn "Install info is at: http://wiki.joyent.com/wiki/display/jpc2/About+Using+the+Cloud+API#AboutUsingtheCloudAPI-InstallNode.js"
-  else
-    # make sure that /opt/local/smartdc is owned by root
-    lib_smartdc_info "settng /opt/local/smartdc to be owned by root:wheel"
-    chown -R root:wheel /opt/local
-    chown -R root:wheel /opt/local/smartdc
-
-    if [[ ! -f /opt/local/smartdc/bin/node ]]; then
-       lib_smartdc_info "MISSING /opt/local/smartdc/bin/node - JPC Cloud API utilties Node.JS SmartDC NOT installed"
-       addwarn "Missing node binary of JPC Cloud API utilties Node.JS SmartDC in /opt/local/smartdc/bin/node"
-       addwarn "This is not fatal and your system will run ok"
-       addwarn "Install info is at: http://wiki.joyent.com/wiki/display/jpc2/About+Using+the+Cloud+API#AboutUsingtheCloudAPI-InstallNode.js"
-    else 
-       NODE_VERSION=`/opt/local/smartdc/bin/node -v`; 
-       lib_smartdc_info "JPC Cloud API utilties Node.JS ( ${NODE_VERSION} ) installed"
-       if [[ ! -f /opt/local/smartdc/lib/node_modules/smartdc/package.json ]]; then
-          lib_smartdc_info "MISSING SmartDC NPM install of JPC Cloud API utilties Node.JS - SmartDC NOT installed"
-          addwarn "Missing SmartDC NPM install of JPC Cloud API utilties Node.JS SmartDC in /opt/local/smartdc/lib/node_modules/smartdc/"
-          addwarn "This is not fatal and your system will run ok"
-          addwarn "Install info is at: http://wiki.joyent.com/wiki/display/jpc2/About+Using+the+Cloud+API#AboutUsingtheCloudAPI-InstallNode.js"
-       else
-          SMARTDC_VERSION=`grep \"version\" /opt/local/smartdc/lib/node_modules/smartdc/package.json | cut -d: -f2 | tr -d \s | tr -d \" | tr -d \, 2> /dev/null`
-          lib_smartdc_info "JPC Cloud API SmartDC utilties ( ${SMARTDC_VERSION} ) installed"
-
-          # make sure that all scripts in /opt/local/smartdc use this version of node
-          out=$( grep -r "^\#\!" /opt/local/smartdc/lib/node_modules/smartdc/bin | grep '/usr/bin/env node' | cut -d ':' -f1 | wc -l )
-          if [ $out -ne 0 ]; then
-             grep -r "^\#\!" /opt/local/smartdc/lib/node_modules/smartdc/bin | grep '/usr/bin/env node' | cut -d ':' -f1 | xargs sed -ri '' "/^\#\!.*/s//\#\!\/opt\/local\/smartdc\/bin\/node/"
-          fi
-       fi
-    fi 
-  fi
-}
-
 cleanup_logs() {
   # remove logs that are not needed on clean install
   lib_smartdc_info "cleaning up logs"
@@ -611,7 +568,6 @@ freebsd_fixes
 
 prepare_freebsd
 check_lib_smartdc
-check_for_smartdc
 cleanup_logs
 cleanup_lock_files
 cleanup_disks
