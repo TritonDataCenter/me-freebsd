@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/local/bin/bash
 #
 # This script will be executed *after* all the other init scripts.
 # You can put your own initialization stuff in here if you don't
