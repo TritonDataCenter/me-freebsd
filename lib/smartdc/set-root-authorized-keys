@@ -16,8 +16,8 @@ overwrite_authorized_flag=$($MDATA_GET_BIN overwrite_root_akeys 2>>/dev/console)
 overwrite_flag=$(echo $overwrite_authorized_flag | tr '[:upper:]' '[:lower:]')
 
 if [[ "$overwrite_flag" == "overwrite"  ]]; then  
-   lib_smartdc_info "Metadata fiels overwrite_root_akeys set to - $overwrite_authorized_flag - Overwriting /root/.ssh/authorized_keys"
-   lib_smartdc_info "Removine /root/.ssh/authorized_keys"
+   lib_smartdc_info "Metadata field overwrite_root_akeys set to - $overwrite_authorized_flag - Overwriting /root/.ssh/authorized_keys"
+   lib_smartdc_info "Removing /root/.ssh/authorized_keys"
    rm -f /root/.ssh/authorized_keys
 fi
 
