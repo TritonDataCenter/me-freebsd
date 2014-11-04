@@ -1,6 +1,6 @@
 #!/usr/local/bin/bash
 # 
-# Copyright (c) 2013 Joyent Inc., All rights reserved.
+# Copyright (c) 2014 Joyent Inc., All rights reserved.
 #
 
 # DO NOT use lib_smartdc_fatal in here

@@ -1,6 +1,6 @@
 #!/usr/local/bin/bash
 
-# Copyright 2014, Joyent Inc. All rights reserved
+# Copyright (c) 2014 Joyent Inc., All rights reserved.
 # For scripts that should be run on first boot only
 
 # load common functions and vars

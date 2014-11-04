@@ -1,7 +1,7 @@
 #!/usr/local/bin/bash
 
 #
-# Copyright 2013, Joyent Inc. All rights reserved
+# Copyright (c) 2014 Joyent Inc., All rights reserved.
 #
 # formats the FreeeBSD secondary disk ( /dev/vtbd1p1 )
 # also refered to as the /data disk
