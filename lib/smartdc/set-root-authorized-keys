@@ -22,11 +22,14 @@ if [[ "$overwrite_flag" == "overwrite"  ]]; then
 fi
 
 if [[ ! -f /root/.ssh/authorized_keys ]]; then
-    authorized_keys=$($MDATA_GET_BIN root_authorized_keys | awk '{ sub(/(ssh-rsa )/,"\n&"); print }' | awk '{ sub(/(ssh-dss )/,"\n&"); print }' 2>>/dev/console)
+    authorized_keys=$($MDATA_GET_BIN root_authorized_keys | \
+      sed 's/\(ssh-rsa\ \)/\n\1/g' | sed 's/\(ssh-dss\ \)/\n\1/g' \
+        2>>/dev/console)
     if [[ -n ${authorized_keys} ]]; then
         mkdir -p /root/.ssh
         echo -e "${authorized_keys}" > /root/.ssh/authorized_keys
-        lib_smartdc_info "Creating /root/.ssh/authorized_keys with Metadata field root_authorized_keys"
+        lib_smartdc_info "Creating /root/.ssh/authorized_keys with Metadata \
+          field root_authorized_keys"
         chmod 700 /root/.ssh
         chmod 600 /root/.ssh/authorized_keys
     fi
