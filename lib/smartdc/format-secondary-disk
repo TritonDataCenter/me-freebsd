@@ -6,8 +6,8 @@
 # formats the FreeeBSD secondary disk ( /dev/vtbd1p1 )
 # also refered to as the /data disk
 
-# customers can provision this disk how they like
-# by default we provision the whole disk as one partition
+# Users can provision this disk how they like
+# By default we provision the whole disk as one partition
 
 # load common functions and vars
 . /lib/smartdc/lib_smartdc_scripts.cfg
