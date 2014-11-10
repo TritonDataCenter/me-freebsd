@@ -17,7 +17,7 @@ for device in $(ifconfig | grep flags | cut -d: -f1); do
 
   grep "ifconfig_$device=" /etc/rc.conf &>/dev/null
   if [[ $? -ne 0 ]]; then
-    lib_smartdc_info "New network interface found: $device. Adding to /etc/rc.conf"
+    lib_smartdc_info "New interface found: $device. Adding to /etc/rc.conf"
     echo "ifconfig_$device=\"DHCP\" # Added by smartdc" >> /etc/rc.conf
 
     nic_added=y
