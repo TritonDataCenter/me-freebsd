@@ -10,10 +10,10 @@ name="smartdc"
 stop_cmd=":"
 
 (/lib/smartdc/add-network-interface)
+(/lib/smartdc/set-hostname)
 (/lib/smartdc/set-root-authorized-keys)
 if [ ! -f /lib/smartdc/.firstboot-complete-do-not-delete ] ; then
   (/lib/smartdc/firstboot)
 fi
-(/lib/smartdc/set-hostname)
 (/lib/smartdc/run-operator-script)
 (/lib/smartdc/run-user-script)
