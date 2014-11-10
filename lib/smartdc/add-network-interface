@@ -1,6 +1,7 @@
 #!/usr/local/bin/bash
 #
 # Copyright (c) 2014 Joyent Inc., All rights reserved.
+# Thsi script checks new network interfaces for and enables via DHCP at boot.
 
 # load common functions and vars
 . /lib/smartdc/lib_smartdc_scripts.cfg
