@@ -1,5 +1,0 @@
-#!/usr/local/bin/bash
-
-(/lib/smartdc/joyent_rc.local)
-
-exit 0
