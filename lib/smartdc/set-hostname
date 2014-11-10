@@ -11,12 +11,12 @@ lib_smartdc_info "Start of $(basename $0) script"
 grep hostname= /etc/rc.conf &>/dev/null
 if [[ $? -ne 0 ]]; then
   lib_smartdc_info "No hostname set in /etc/rc.conf."
-  hostname=$(/lib/smartdc/mdata-get sdc:hostname) && \
+  hostname=$($MDATA_GET_BIN sdc:hostname) && \
     lib_smartdc_info "Setting hostname to sdc:hostname: $hostname."
   
   if [[ $? -ne 0 ]]; then
     lib_smartdc_info "No value set for sdc:hostname."
-    hostname=$(/lib/smartdc/mdata-get sdc:uuid) && \
+    hostname=$($MDATA_GET_BIN sdc:uuid) && \
       lib_smartdc_info "Setting hostname to sdc:uuid: $hostname"
     
     if [[ $? -ne 0 ]]; then
