@@ -33,3 +33,5 @@ if [[ $? -ne 0 ]]; then
     /etc/rc.d/hostname restart
   fi
 fi
+
+exit 0

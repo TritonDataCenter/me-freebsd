@@ -28,3 +28,5 @@ if [[ "$nic_added" == "y" ]]; then
   lib_smartdc_info "Restarting /etc/rc.d/netif"
   /etc/rc.d/netif restart
 fi
+
+exit 0
