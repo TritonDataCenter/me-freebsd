@@ -27,8 +27,7 @@ if [[ $? -ne 0 ]]; then
   fi
 
   if [[ ! -z "$hostname" ]]; then
-    lib_smartdc_info "Setting hostname to '$hostname' and \
-      restarting /etc/rc.d/hostname"
+    lib_smartdc_info "Restarting /etc/rc.d/hostname"
     echo hostname="\"$hostname\"" >> /etc/rc.conf
     /etc/rc.d/hostname restart
   fi
