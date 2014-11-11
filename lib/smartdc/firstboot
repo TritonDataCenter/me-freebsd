@@ -18,4 +18,6 @@ lib_smartdc_info "Start of $(basename $0) script"
 lib_smartdc_info "Disabling firstboot"
 touch /lib/smartdc/.firstboot-complete-do-not-delete
 
+lib_smartdc_info "End of $(basename $0) script"
+
 exit 0

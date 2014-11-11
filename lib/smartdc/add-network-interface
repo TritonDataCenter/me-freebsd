@@ -29,4 +29,6 @@ if [[ "$nic_added" == "y" ]]; then
   /etc/rc.d/netif restart
 fi
 
+lib_smartdc_info "End of $(basename $0) script"
+
 exit 0
