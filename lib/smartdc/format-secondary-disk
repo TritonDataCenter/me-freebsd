@@ -1,13 +1,13 @@
-#! /usr/local/bin/bash
+#!/usr/local/bin/bash
 
 #
-# Copyright 2013, Joyent Inc. All rights reserved
+# Copyright (c) 2014 Joyent Inc., All rights reserved.
 #
 # formats the FreeeBSD secondary disk ( /dev/vtbd1p1 )
 # also refered to as the /data disk
 
-# customers can provision this disk how they like
-# by default we provision the whole disk as one partition
+# Users can provision this disk how they like
+# By default we provision the whole disk as one partition
 
 # load common functions and vars
 . /lib/smartdc/lib_smartdc_scripts.cfg
@@ -17,7 +17,7 @@ GPART=/sbin/gpart
 
 checkformount() {
    fstest=$(df -h | grep "/dev/${DATADISKDEVICE}p1")
-   if [ -n "$fstest" ] ; then
+   if [[ -n "$fstest" ]] ; then
      fssize=$(echo $fstest | sed -E '/[[:space:]]{2,}/s// /g' | cut -d ' ' -f2)
      lib_smartdc_info "$fssize data disk is mounted on /dev/${DATADISKDEVICE}p1"
      return 1
@@ -29,7 +29,7 @@ checkformount() {
 
 # Start of Main
 
-lib_smartdc_info "Start of script for FreeBSD"
+lib_smartdc_info "Start of $(basename $0) script"
 
 # check for device
 if [[ ! -e /dev/${DATADISKDEVICE} ]] ; then
@@ -43,7 +43,7 @@ fi
 ## Sanity check
 checkformount
 return_val=$?
-if [ "$return_val" -eq 1 ]; then
+if [[ "$return_val" -eq 1 ]]; then
   lib_smartdc_fatal "data disk is already mounted"
 else 
   lib_smartdc_info "no data disk is mounted"
@@ -114,12 +114,12 @@ mount /data
 
 checkformount
 return_val=$?
-if [ "$return_val" -eq 1 ]; then
+if [[ "$return_val" -eq 1 ]]; then
   lib_smartdc_info "data disk is mounted"
 else 
   lib_smartdc_fatal "no data disk is mounted"
 fi
 
-lib_smartdc_info "End of script"
+lib_smartdc_info "End of $(basename $0) script"
 
 exit 0
