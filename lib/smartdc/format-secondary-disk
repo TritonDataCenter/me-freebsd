@@ -29,7 +29,7 @@ checkformount() {
 
 # Start of Main
 
-lib_smartdc_info "Start of script for FreeBSD"
+lib_smartdc_info "Start of $(basename $0) script"
 
 # check for device
 if [[ ! -e /dev/${DATADISKDEVICE} ]] ; then
@@ -120,6 +120,6 @@ else
   lib_smartdc_fatal "no data disk is mounted"
 fi
 
-lib_smartdc_info "End of script"
+lib_smartdc_info "End of $(basename $0) script"
 
 exit 0
